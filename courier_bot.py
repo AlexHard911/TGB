@@ -1395,7 +1395,7 @@ async def handle_unprocessed(message: types.Message):
 
 async def on_startup():
     asyncio.create_task(schedule_cleanup())
-    asyncio.create_task(send_weekly_report()) 
+    asyncio.create_task(send_weekly_report())
 
 app = FastAPI()
 
@@ -1403,17 +1403,45 @@ app = FastAPI()
 async def wakeup():
     return {"status": "Bot is alive"}
 
+@app.get("/check_bot")
+async def check_bot_status():
+    try:
+        bot_info = await bot.get_me()
+        return {
+            "status": "Bot is running",
+            "bot_username": bot_info.username,
+            "webhook_info": await bot.get_webhook_info()
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+async def run_bot():
+    await bot.delete_webhook(drop_pending_updates=True)
+    await dp.start_polling(bot)
+
+async def run_http():
+    config = uvicorn.Config(
+        app,
+        host="0.0.0.0",
+        port=10000,
+        log_level="info"
+    )
+    server = uvicorn.Server(config)
+    await server.serve()
+
 if __name__ == '__main__':
-    import uvicorn
-    from aiogram import Dispatcher
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
     
-    # Запускаем бота и HTTP-сервер вместе
-    async def start():
-        dp.startup.register(on_startup)
-        bot_task = asyncio.create_task(dp.start_polling(bot))
-        http_task = asyncio.create_task(
-            uvicorn.run(app, host="0.0.0.0", port=10000)
-        )
-        await asyncio.gather(bot_task, http_task)
+    # Запускаем обе задачи параллельно
+    http_task = loop.create_task(run_http())
+    bot_task = loop.create_task(run_bot())
     
-    asyncio.run(start())
+    try:
+        loop.run_forever()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        http_task.cancel()
+        bot_task.cancel()
+        loop.close()
