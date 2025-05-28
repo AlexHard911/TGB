@@ -5,6 +5,7 @@ import pytz
 import os
 from datetime import datetime, timedelta
 from pathlib import Path
+from fastapi import FastAPI  # Перенесите этот импорт сюда!
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command, CommandStart
 from aiogram.fsm.context import FSMContext
@@ -1394,10 +1395,7 @@ async def handle_unprocessed(message: types.Message):
 
 async def on_startup():
     asyncio.create_task(schedule_cleanup())
-    asyncio.create_task(send_weekly_report())
-
-
-from fastapi import FastAPI  # Добавьте в начало файла с другими импортами
+    asyncio.create_task(send_weekly_report()) 
 
 app = FastAPI()
 
