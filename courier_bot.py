@@ -1399,8 +1399,8 @@ async def on_startup():
 
 from fastapi import FastAPI
 import uvicorn
-from aiogram import Dispatcher, Bot
-import asyncio
+import multiprocessing
+import logging
 
 app = FastAPI()
 
@@ -1408,38 +1408,34 @@ app = FastAPI()
 async def wakeup():
     return {"status": "Bot is alive"}
 
-async def run_bot():
-    """Запуск Telegram бота"""
-    try:
-        await bot.delete_webhook(drop_pending_updates=True)
+def run_bot():
+    """Запуск бота в отдельном процессе"""
+    from aiogram import Dispatcher
+    import asyncio
+    
+    async def start_polling():
         await dp.start_polling(bot)
-    except Exception as e:
-        logger.error(f"Bot polling error: {e}")
+    
+    asyncio.run(start_polling())
 
-async def run_http():
+def run_http():
     """Запуск HTTP сервера"""
-    config = uvicorn.Config(
-        app,
-        host="0.0.0.0",
-        port=10000,
-        log_level="info"
-    )
-    server = uvicorn.Server(config)
-    await server.serve()
-
-async def main():
-    """Основная функция для параллельного запуска"""
-    await on_startup()  # Ваша функция инициализации
-    
-    http_task = asyncio.create_task(run_http())
-    bot_task = asyncio.create_task(run_bot())
-    
-    await asyncio.gather(http_task, bot_task)
+    uvicorn.run(app, host="0.0.0.0", port=10000)
 
 if __name__ == '__main__':
+    # Настройка логирования
+    logging.basicConfig(level=logging.INFO)
+    logger = logging.getLogger(__name__)
+    
+    # Запускаем бота в отдельном процессе
+    bot_process = multiprocessing.Process(target=run_bot)
+    bot_process.start()
+    
+    # Запускаем HTTP сервер в основном процессе
     try:
-        asyncio.run(main())
+        run_http()
     except KeyboardInterrupt:
-        logger.info("Bot stopped")
-    except Exception as e:
-        logger.error(f"Fatal error: {e}")
+        logger.info("Остановка сервера...")
+    finally:
+        bot_process.terminate()
+        bot_process.join()
