@@ -1,4 +1,3 @@
-# Основные импорты
 import asyncio
 import logging
 import sqlite3
@@ -18,6 +17,9 @@ from aiogram.types import (
     KeyboardButton
 )
 from dotenv import load_dotenv
+
+ACTIVE_COURIERS_FILE = 'active_couriers.txt'
+TIME_ZONE = pytz.timezone('Europe/Moscow')
 
 load_dotenv() 
 
