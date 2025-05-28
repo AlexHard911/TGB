@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from aiogram import Bot, Dispatcher
 from aiogram.fsm.storage.memory import MemoryStorage
-import os
+from aiogram.fsm.state import StatesGroup, State  # Этот импорт был пропущен
 from dotenv import load_dotenv
 
 load_dotenv()  # Загружает переменные из .env файла
@@ -24,9 +24,6 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
-
-bot = Bot(token=API_TOKEN)
-dp = Dispatcher(storage=MemoryStorage())
 
 class Form(StatesGroup):
     previous_state = State()
