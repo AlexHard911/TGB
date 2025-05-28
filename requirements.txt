@@ -4,4 +4,3 @@ uvicorn==0.22.0
 python-dotenv==1.0.0
 pytz==2023.3
 aiohttp==3.8.4
-sqlite3
