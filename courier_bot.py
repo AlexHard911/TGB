@@ -1397,15 +1397,25 @@ async def on_startup():
     asyncio.create_task(send_weekly_report())
 
 
+from fastapi import FastAPI  # Добавьте в начало файла с другими импортами
+
+app = FastAPI()
+
+@app.get("/")
+async def wakeup():
+    return {"status": "Bot is alive"}
+
 if __name__ == '__main__':
-    required_files = [
-        'admin_id.txt', 'courier_id.txt', 'orders.txt',
-        'courier_index.txt', 'order_counter.txt', ACTIVE_COURIERS_FILE,
-        'order_history.txt', 'blocked_couriers.txt'
-    ]
-
-    for file in required_files:
-        Path(file).touch(exist_ok=True)
-
-    dp.startup.register(on_startup)
-    dp.run_polling(bot)
+    import uvicorn
+    from aiogram import Dispatcher
+    
+    # Запускаем бота и HTTP-сервер вместе
+    async def start():
+        dp.startup.register(on_startup)
+        bot_task = asyncio.create_task(dp.start_polling(bot))
+        http_task = asyncio.create_task(
+            uvicorn.run(app, host="0.0.0.0", port=10000)
+        )
+        await asyncio.gather(bot_task, http_task)
+    
+    asyncio.run(start())
