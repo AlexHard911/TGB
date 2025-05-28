@@ -1,3 +1,4 @@
+# Основные импорты
 import asyncio
 import logging
 import sqlite3
@@ -5,12 +6,20 @@ import pytz
 import os
 from datetime import datetime, timedelta
 from pathlib import Path
-from aiogram import Bot, Dispatcher
+from aiogram import Bot, Dispatcher, types
+from aiogram.filters import Command, CommandStart
+from aiogram.fsm.context import FSMContext
+from aiogram.fsm.state import StatesGroup, State
 from aiogram.fsm.storage.memory import MemoryStorage
-from aiogram.fsm.state import StatesGroup, State  # Этот импорт был пропущен
+from aiogram.types import (
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    ReplyKeyboardMarkup,
+    KeyboardButton
+)
 from dotenv import load_dotenv
 
-load_dotenv()  # Загружает переменные из .env файла
+load_dotenv() 
 
 API_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 SECRET_PASSWORD = os.getenv('SECRET_PASSWORD')
