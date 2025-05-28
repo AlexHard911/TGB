@@ -1397,29 +1397,27 @@ async def on_startup():
     asyncio.create_task(schedule_cleanup())
     asyncio.create_task(send_weekly_report())
 
+from fastapi import FastAPI
+import uvicorn
+from aiogram import Dispatcher, Bot
+import asyncio
+
 app = FastAPI()
 
 @app.get("/")
 async def wakeup():
     return {"status": "Bot is alive"}
 
-@app.get("/check_bot")
-async def check_bot_status():
-    try:
-        bot_info = await bot.get_me()
-        return {
-            "status": "Bot is running",
-            "bot_username": bot_info.username,
-            "webhook_info": await bot.get_webhook_info()
-        }
-    except Exception as e:
-        return {"error": str(e)}
-
 async def run_bot():
-    await bot.delete_webhook(drop_pending_updates=True)
-    await dp.start_polling(bot)
+    """Запуск Telegram бота"""
+    try:
+        await bot.delete_webhook(drop_pending_updates=True)
+        await dp.start_polling(bot)
+    except Exception as e:
+        logger.error(f"Bot polling error: {e}")
 
 async def run_http():
+    """Запуск HTTP сервера"""
     config = uvicorn.Config(
         app,
         host="0.0.0.0",
@@ -1429,19 +1427,19 @@ async def run_http():
     server = uvicorn.Server(config)
     await server.serve()
 
+async def main():
+    """Основная функция для параллельного запуска"""
+    await on_startup()  # Ваша функция инициализации
+    
+    http_task = asyncio.create_task(run_http())
+    bot_task = asyncio.create_task(run_bot())
+    
+    await asyncio.gather(http_task, bot_task)
+
 if __name__ == '__main__':
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    
-    # Запускаем обе задачи параллельно
-    http_task = loop.create_task(run_http())
-    bot_task = loop.create_task(run_bot())
-    
     try:
-        loop.run_forever()
+        asyncio.run(main())
     except KeyboardInterrupt:
-        pass
-    finally:
-        http_task.cancel()
-        bot_task.cancel()
-        loop.close()
+        logger.info("Bot stopped")
+    except Exception as e:
+        logger.error(f"Fatal error: {e}")
